@@ -10,13 +10,14 @@ const EmailPattern string = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\
 var rxEmail = regexp.MustCompile(EmailPattern)
 
 type Validatable interface {
-	Validate(v *Validator) ValidationViolations
+	Validate(v Validator) ValidationViolations
 }
 
 type Validator interface {
 	MustBePresent(value string) bool
 	MustBeEmail(value string) bool
 	MustBeIn(value string, collection []interface{}) bool
+	ValidatesWithFunc(value string, function func(string) bool) bool
 }
 
 type ValidationResult struct {
@@ -78,4 +79,8 @@ func intSliceContainsInt(collection []interface{}, value int) bool {
 		}
 	}
 	return false
+}
+
+func (v *BasicValidator) ValidateWithFunc(value string, function func(string) bool) bool {
+	return function(value)
 }

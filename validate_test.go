@@ -81,6 +81,76 @@ func TestMustBeEmail(t *testing.T) {
 	}
 }
 
+type withFuncTest struct {
+	title    string
+	input    string
+	function func(string) bool
+	expected bool
+	message  string
+}
+
+func TestValidateWithFunc(t *testing.T) {
+	val := &BasicValidator{}
+
+	alwaysTrueFunc := func(input string) bool { return true }
+	alwaysFalseFunc := func(input string) bool { return false }
+
+	marker := false
+
+	markerFunc := func(input string) bool {
+		marker = true
+		return marker
+	}
+
+	tests := []withFuncTest{
+		{
+			title:    "Function always returning true will pass empty string",
+			input:    "",
+			function: alwaysTrueFunc,
+			expected: true,
+			message:  "Validating using a function always returning true should always pass, even with empty string",
+		},
+		{
+			title:    "Function always returning true will pass random string",
+			input:    "dfjshakjfdshkafds",
+			function: alwaysTrueFunc,
+			expected: true,
+			message:  "Validating using a function always returning true should always pass, even with random string",
+		},
+		{
+			title:    "Function always returning false will not pass empty string",
+			input:    "",
+			function: alwaysFalseFunc,
+			expected: false,
+			message:  "Validating using a function always returning true should never pass, even with empty string",
+		},
+		{
+			title:    "Function always returning false will not pass random string",
+			input:    "dfjshakjfdshkafds",
+			function: alwaysFalseFunc,
+			expected: false,
+			message:  "Validating using a function always returning false should never pass, even with random string",
+		},
+		{
+			title:    "Function is actually called",
+			input:    "dummy",
+			function: markerFunc,
+			expected: true,
+			message:  "Expected the function to be called",
+		},
+	}
+
+	for _, test := range tests {
+		if res := val.ValidateWithFunc(test.input, test.function); res != test.expected {
+			t.Errorf("Test '%s' failed: %s (Expected: %v, Found: %v)", test.title, test.message, test.expected, res)
+		}
+	}
+
+	if marker != true {
+		t.Errorf("Expected the marker to be switched to false (it seems the function was not called)")
+	}
+}
+
 type inValidationTest struct {
 	title      string
 	input      string
