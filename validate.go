@@ -1,6 +1,9 @@
 package validate
 
 import (
+	"fmt"
+	"log"
+	"reflect"
 	"regexp"
 	"strconv"
 )
@@ -14,36 +17,92 @@ type Validatable interface {
 }
 
 type Validator interface {
-	MustBePresent(value string) bool
-	MustBeEmail(value string) bool
-	MustBeIn(value string, collection []interface{}) bool
-	ValidateWithFunc(value string, function func(string) bool) bool
+	ClearViolations()
+	Violations() ValidationViolations
+
+	ValidatePresent(target interface{}, field string) bool
+	ValidateEmail(target interface{}, field string) bool
+	ValidateInclusion(target interface{}, field string, collection []interface{}) bool
+	ValidateWithFunction(target interface{}, field string, function func(string) bool) bool
 }
 
-type ValidationResult struct {
-	match   bool
-	message string
-}
-
-type ValidationViolation struct {
-	Field    string
-	Messages []string
-}
-
-type ValidationViolations []ValidationViolation
+type ValidationViolations map[string][]string
 
 type BasicValidator struct {
+	violations ValidationViolations
 }
 
-func (v *BasicValidator) MustBePresent(value string) bool {
+func (v *BasicValidator) ClearViolations() {
+	v.violations = make(map[string][]string)
+}
+
+func (v *BasicValidator) Violations() ValidationViolations {
+	return v.violations
+}
+
+func (v *BasicValidator) ValidatePresent(target interface{}, field string) bool {
+	value, err := v.getValueForTargetField(target, field)
+	if err != nil {
+		v.appendViolation(field, fmt.Sprintf("could not find field '%s'", field))
+		return false
+	}
+	if !v.mustBePresent(value) {
+		v.appendViolation(field, fmt.Sprintf("expected %s to be present", field))
+		return false
+	}
+	return true
+}
+
+func (v *BasicValidator) ValidateEmail(target interface{}, field string) bool {
+	value, err := v.getValueForTargetField(target, field)
+	if err != nil {
+		v.appendViolation(field, fmt.Sprintf("could not find field '%s'", field))
+		return false
+	}
+
+	if !v.mustBeEmail(value) {
+		v.appendViolation(field, fmt.Sprintf("expected '%s' to be an email address", value))
+		return false
+	}
+	return true
+}
+
+func (v *BasicValidator) ValidateInclusion(target interface{}, field string, collection []interface{}) bool {
+	value, err := v.getValueForTargetField(target, field)
+	if err != nil {
+		v.appendViolation(field, fmt.Sprintf("could not find field '%s'", field))
+		return false
+	}
+
+	if !v.mustBeIn(value, collection) {
+		v.appendViolation(field, fmt.Sprintf("expected '%+v' to include '%s'", collection, value))
+		return false
+	}
+	return true
+}
+
+func (v *BasicValidator) ValidateWithFunction(target interface{}, field string, function func(string) bool) bool {
+	value, err := v.getValueForTargetField(target, field)
+	if err != nil {
+		v.appendViolation(field, fmt.Sprintf("could not find field '%s'", field))
+		return false
+	}
+
+	if !v.validateValueWithFunc(value, function) {
+		v.appendViolation(field, fmt.Sprintf("expected provided function to evaluate to true when applied to input '%s'", value))
+		return false
+	}
+	return true
+}
+func (v *BasicValidator) mustBePresent(value string) bool {
 	return value != ""
 }
 
-func (v *BasicValidator) MustBeEmail(value string) bool {
+func (v *BasicValidator) mustBeEmail(value string) bool {
 	return rxEmail.MatchString(value)
 }
 
-func (v *BasicValidator) MustBeIn(value string, collection []interface{}) bool {
+func (v *BasicValidator) mustBeIn(value string, collection []interface{}) bool {
 	if len(collection) == 0 {
 		return false
 	}
@@ -81,6 +140,30 @@ func intSliceContainsInt(collection []interface{}, value int) bool {
 	return false
 }
 
-func (v *BasicValidator) ValidateWithFunc(value string, function func(string) bool) bool {
+func (v *BasicValidator) validateValueWithFunc(value string, function func(string) bool) bool {
 	return function(value)
+}
+
+func (v *BasicValidator) appendViolation(field, message string) {
+	var found bool
+	if _, found = v.violations[field]; found == false {
+		v.violations[field] = make([]string, 1, 1)
+	}
+
+	v.violations[field] = append(v.violations[field], message)
+	log.Println(fmt.Sprintf("Violations: %+v", v.violations))
+}
+
+func (v *BasicValidator) getValueForTargetField(target interface{}, field string) (string, error) {
+	value := reflect.ValueOf(target).Elem()
+	fieldValue := value.FieldByName(field)
+	if isZeroOfUnderlyingType(fieldValue) {
+		return "", fmt.Errorf("Could not get a value for field '%s'", field)
+	}
+	res := fieldValue.String()
+	return res, nil
+}
+
+func isZeroOfUnderlyingType(x interface{}) bool {
+	return x == nil || x == reflect.Zero(reflect.TypeOf(x)).Interface()
 }

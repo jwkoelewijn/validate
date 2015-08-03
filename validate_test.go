@@ -33,7 +33,7 @@ func TestMustBePresent(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if res := val.MustBePresent(test.input); res != test.expected {
+		if res := val.mustBePresent(test.input); res != test.expected {
 			t.Errorf("Test '%s' failed: %s (Expected: %v, Found: %v)", test.title, test.message, test.expected, res)
 		}
 	}
@@ -75,7 +75,7 @@ func TestMustBeEmail(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if res := val.MustBeEmail(test.input); res != test.expected {
+		if res := val.mustBeEmail(test.input); res != test.expected {
 			t.Errorf("Test '%s' failed: %s (Expected: %v, Found: %v)", test.title, test.message, test.expected, res)
 		}
 	}
@@ -141,7 +141,7 @@ func TestValidateWithFunc(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if res := val.ValidateWithFunc(test.input, test.function); res != test.expected {
+		if res := val.validateValueWithFunc(test.input, test.function); res != test.expected {
 			t.Errorf("Test '%s' failed: %s (Expected: %v, Found: %v)", test.title, test.message, test.expected, res)
 		}
 	}
@@ -221,7 +221,7 @@ func TestMustBeIn(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if res := val.MustBeIn(test.input, test.collection); res != test.expected {
+		if res := val.mustBeIn(test.input, test.collection); res != test.expected {
 			t.Errorf("Test '%s' failed: %s (Expected: %v, Found: %v)", test.title, test.message, test.expected, res)
 		}
 	}
