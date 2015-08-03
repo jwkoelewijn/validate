@@ -2,7 +2,6 @@ package validate
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -151,7 +150,6 @@ func (v *BasicValidator) appendViolation(field, message string) {
 	}
 
 	v.violations[field] = append(v.violations[field], message)
-	log.Println(fmt.Sprintf("Violations: %+v", v.violations))
 }
 
 func (v *BasicValidator) getValueForTargetField(target interface{}, field string) (string, error) {
