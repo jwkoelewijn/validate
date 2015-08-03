@@ -17,7 +17,7 @@ type Validator interface {
 	MustBePresent(value string) bool
 	MustBeEmail(value string) bool
 	MustBeIn(value string, collection []interface{}) bool
-	ValidatesWithFunc(value string, function func(string) bool) bool
+	ValidateWithFunc(value string, function func(string) bool) bool
 }
 
 type ValidationResult struct {
