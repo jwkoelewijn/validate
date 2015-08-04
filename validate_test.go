@@ -226,3 +226,71 @@ func TestMustBeIn(t *testing.T) {
 		}
 	}
 }
+
+type tester struct {
+	field string
+}
+
+type testCase struct {
+	title    string
+	field    string
+	value    string
+	expected bool
+	message  string
+	errors   int
+}
+
+func TestValidatePresent(t *testing.T) {
+	testCases := []testCase{
+		{
+			title:    "non existing field is not present",
+			field:    "nofield",
+			value:    "value",
+			expected: false,
+			message:  "Expected a non-existing field to not be present",
+			errors:   1,
+		},
+		{
+			title:    "empty field is not present",
+			field:    "",
+			value:    "value",
+			expected: false,
+			message:  "Expected a field without a name to not be present",
+			errors:   1,
+		},
+		{
+			title:    "empty string is not present",
+			field:    "field",
+			value:    "",
+			expected: false,
+			message:  "Expected an empty string as value to not be present",
+			errors:   1,
+		},
+		{
+			title:    "non empty string is present",
+			field:    "field",
+			value:    "value",
+			expected: true,
+			message:  "Expected a non empty string to be present",
+			errors:   0,
+		},
+	}
+
+	validator := BasicValidator{}
+	for _, tc := range testCases {
+		target := &tester{field: tc.value}
+
+		validator.ClearViolations()
+		res := validator.ValidatePresent(target, tc.field)
+		if res != tc.expected || len(validator.Violations()[tc.field]) > tc.errors {
+			t.Errorf("Test '%s' failed: %s (expected errors: %d, found %d) (Expected: %v, Found: %v). Errors: %+v", tc.title,
+				tc.message,
+				tc.errors,
+				len(validator.Violations()[tc.field]),
+				tc.expected,
+				res,
+				validator.Violations()[tc.field],
+			)
+		}
+	}
+}

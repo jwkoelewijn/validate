@@ -146,7 +146,8 @@ func (v *BasicValidator) validateValueWithFunc(value string, function func(strin
 func (v *BasicValidator) appendViolation(field, message string) {
 	var found bool
 	if _, found = v.violations[field]; found == false {
-		v.violations[field] = make([]string, 1, 1)
+		var violationList []string
+		v.violations[field] = violationList
 	}
 
 	v.violations[field] = append(v.violations[field], message)
