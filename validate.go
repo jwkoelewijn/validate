@@ -46,7 +46,7 @@ func (v *BasicValidator) ValidatePresent(target interface{}, field string) bool 
 		return false
 	}
 	if !v.mustBePresent(value) {
-		v.appendViolation(field, fmt.Sprintf("expected %s to be present", field))
+		v.appendViolation(field, "should be present")
 		return false
 	}
 	return true
@@ -60,7 +60,7 @@ func (v *BasicValidator) ValidateEmail(target interface{}, field string, allowEm
 	}
 
 	if !v.mustBeEmail(value, allowEmpty) {
-		v.appendViolation(field, fmt.Sprintf("expected '%s' to be an email address", value))
+		v.appendViolation(field, "is not a valid email address")
 		return false
 	}
 	return true
@@ -74,7 +74,7 @@ func (v *BasicValidator) ValidateInclusion(target interface{}, field string, col
 	}
 
 	if !v.mustBeIn(value, collection, allowEmpty) {
-		v.appendViolation(field, fmt.Sprintf("expected '%+v' to include '%s'", collection, value))
+		v.appendViolation(field, fmt.Sprintf("should be in '%+v'", collection))
 		return false
 	}
 	return true
@@ -171,15 +171,20 @@ func (v *BasicValidator) getValueForTargetField(target interface{}, field string
 		return "", fmt.Errorf("Could not get a value for field '%s'", field)
 	}
 
-	var res string
-	if isNil(fieldValue) {
-		res = ""
-	} else if fieldValue.Kind() == reflect.Ptr {
-		res = strconv.FormatInt(fieldValue.Elem().Int(), 10)
-	} else {
-		res = fieldValue.String()
-	}
+	res := fieldValueToString(fieldValue)
 	return res, nil
+}
+
+func fieldValueToString(fieldValue reflect.Value) string {
+	if isNil(fieldValue) {
+		return ""
+	} else if fieldValue.Kind() == reflect.Ptr {
+		return fieldValueToString(fieldValue.Elem())
+	} else if fieldValue.Kind() == reflect.Int {
+		return strconv.FormatInt(fieldValue.Int(), 10)
+	} else {
+		return fieldValue.String()
+	}
 }
 
 func isNil(a reflect.Value) bool {
