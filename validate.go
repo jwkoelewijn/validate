@@ -23,7 +23,7 @@ type Validator interface {
 	ValidateEmail(target interface{}, field string, allowEmptyInput bool) bool
 	ValidateInclusion(target interface{}, field string, collection []interface{}, allowEmptyInput bool) bool
 	ValidateWithFunction(target interface{}, field, message string, allowEmptyInput bool, function func(string) bool) bool
-	ValidateWithMessageFunction(target interface{}, field, alloweEmptyInput bool, function func(string) (bool, string)) bool
+	ValidateWithMessageFunction(target interface{}, field string, alloweEmptyInput bool, function func(string) (bool, string)) bool
 }
 
 type ValidationViolations map[string][]string
