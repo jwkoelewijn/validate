@@ -23,6 +23,7 @@ type Validator interface {
 	ValidateEmail(target interface{}, field string, allowEmptyInput bool) bool
 	ValidateInclusion(target interface{}, field string, collection []interface{}, allowEmptyInput bool) bool
 	ValidateWithFunction(target interface{}, field, message string, allowEmptyInput bool, function func(string) bool) bool
+	ValidateWithMessageFunction(target interface{}, field, alloweEmptyInput bool, function func(string) (bool, string)) bool
 }
 
 type ValidationViolations map[string][]string
@@ -93,6 +94,23 @@ func (v *BasicValidator) ValidateWithFunction(target interface{}, field, message
 	}
 	return true
 }
+
+func (v *BasicValidator) ValidateWithMessageFunction(target interface{}, field string, allowEmpty bool, function func(string) (bool, string)) bool {
+	value, err := v.getValueForTargetField(target, field)
+	if err != nil {
+		v.appendViolation(field, fmt.Sprintf("could not find field '%s'", field))
+		return false
+	}
+
+	result, message := v.validateValueWithMessageFunc(value, allowEmpty, function)
+	if !result {
+		v.appendViolation(field, message)
+		return false
+	}
+
+	return true
+}
+
 func (v *BasicValidator) mustBePresent(value string) bool {
 	return value != ""
 }
@@ -149,6 +167,13 @@ func intSliceContainsInt(collection []interface{}, value int) bool {
 func (v *BasicValidator) validateValueWithFunc(value string, allowEmpty bool, function func(string) bool) bool {
 	if allowEmpty && value == "" {
 		return true
+	}
+	return function(value)
+}
+
+func (v *BasicValidator) validateValueWithMessageFunc(value string, allowEmpty bool, function func(string) (bool, string)) (bool, string) {
+	if allowEmpty && value == "" {
+		return true, ""
 	}
 	return function(value)
 }

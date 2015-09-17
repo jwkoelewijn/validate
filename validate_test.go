@@ -180,6 +180,106 @@ func TestValidateWithFunc(t *testing.T) {
 	}
 }
 
+type withMessageFuncTest struct {
+	title      string
+	input      string
+	allowEmpty bool
+	function   func(string) (bool, string)
+	expected   bool
+	message    string
+}
+
+func TestValidateWithMessageFunc(t *testing.T) {
+	val := &BasicValidator{}
+
+	alwaysTrueFunc := func(input string) (bool, string) { return true, "" }
+	alwaysFalseFunc := func(input string) (bool, string) { return false, "false" }
+
+	marker := false
+
+	markerFunc := func(input string) (bool, string) {
+		msg := ""
+		marker = true
+
+		if !marker {
+			msg = "false"
+		}
+		return marker, msg
+	}
+
+	tests := []withMessageFuncTest{
+		{
+			title:      "Function always returning true will pass empty string",
+			input:      "",
+			function:   alwaysTrueFunc,
+			expected:   true,
+			allowEmpty: false,
+			message:    "Validating using a function always returning true should always pass, even with empty string",
+		},
+		{
+			title:      "Function always returning true will pass random string",
+			input:      "dfjshakjfdshkafds",
+			function:   alwaysTrueFunc,
+			expected:   true,
+			allowEmpty: false,
+			message:    "Validating using a function always returning true should always pass, even with random string",
+		},
+		{
+			title:      "Function always returning false will not pass empty string when allowEmpty is false",
+			input:      "",
+			function:   alwaysFalseFunc,
+			expected:   false,
+			allowEmpty: false,
+			message:    "Validating using a function always returning false should never pass, even with empty string and allowEmpty is false",
+		},
+		{
+			title:      "Function always returning false will pass empty string when allowEmpty is true",
+			input:      "",
+			function:   alwaysFalseFunc,
+			expected:   true,
+			allowEmpty: true,
+			message:    "Validating using a function always returning false should pass with empty string and allowEmpty is true",
+		},
+
+		{
+			title:      "Function always returning false will not pass random string",
+			input:      "dfjshakjfdshkafds",
+			function:   alwaysFalseFunc,
+			expected:   false,
+			allowEmpty: false,
+			message:    "Validating using a function always returning false should never pass, even with random string",
+		},
+		{
+			title:      "Function is actually called",
+			input:      "dummy",
+			function:   markerFunc,
+			expected:   true,
+			allowEmpty: false,
+			message:    "Expected the function to be called",
+		},
+	}
+
+	for _, test := range tests {
+		res, msg := val.validateValueWithMessageFunc(test.input, test.allowEmpty, test.function)
+
+		if res && msg != "" {
+			t.Errorf("Did not expect to see a message for a 'true' validation")
+		}
+
+		if !res && msg != "false" {
+			t.Errorf("Expected the message to equal 'false' due to a failed validation")
+		}
+
+		if res != test.expected {
+			t.Errorf("Test '%s' failed: %s (Expected: %v, Found: %v)", test.title, test.message, test.expected, res)
+		}
+	}
+
+	if marker != true {
+		t.Errorf("Expected the marker to be switched to false (it seems the function was not called)")
+	}
+}
+
 type inValidationTest struct {
 	title      string
 	input      string
